@@ -3,14 +3,13 @@ Microsoft | Array + Stack | Monotonic Stack Pattern | Hard
 
 Problem:
 --------
-Given an array of integers heights representing the histogram's bar heights (width = 1 each),
-return the area of the largest rectangle in the histogram.
+You are given an array of integers heights representing the histogram's bar heights (width = 1 each).
+Return the area of the largest rectangle in the histogram.
 
 Examples:
 ---------
 Input: [2,1,5,6,2,3] → Output: 10
-    The largest rectangle is formed by bars of height 5 and 6 → area = 2 * 5 = 10.
-
+    Largest rectangle = 5 and 6 → width=2, area=10.
 Input: [2,4] → Output: 4
     Largest rectangle = single bar of height 4.
 
@@ -29,11 +28,11 @@ BRUTE FORCE SOLUTION (Step by Step)
 How to Think Brute Force:
 -------------------------
 - For each bar at index i:
-   - Expand left until a smaller height is found.
-   - Expand right until a smaller height is found.
-   - Width = right - left - 1
-   - Area = height[i] * width
-- Track maximum across all i.
+  1. Expand left until a smaller bar is found.
+  2. Expand right until a smaller bar is found.
+  3. Width = right - left - 1
+  4. Area = heights[i] * width
+- Track the maximum area.
 
 Brute Force Code:
 -----------------
@@ -63,16 +62,12 @@ public int largestRectangleArea(int[] heights) {
     return maxArea;
 }
 
-Step-by-Step Complexity Analysis:
----------------------------------
-1. Outer loop runs n times.
-2. For each i, we expand left O(n) and right O(n) in worst case.
-   → For array of all equal heights, each expansion touches almost n bars.
-3. Total = O(n^2).
-
-Space Complexity:
------------------
-- Only variables left, right, maxArea → O(1).
+Step-by-Step Complexity:
+------------------------
+1. Outer loop = n iterations.
+2. For each i, left expansion O(n), right expansion O(n).
+3. Worst case (all equal heights): O(n^2).
+4. Space = O(1) (only variables).
 
 Final Complexity:
 -----------------
@@ -83,31 +78,29 @@ Final Complexity:
 
 /*
 --------------------------------------
-THINKING TOWARDS OPTIMIZATION
+MOVING TOWARDS OPTIMIZATION
 --------------------------------------
 
-1. Brute force expands left and right repeatedly → O(n^2).
+1. Brute force re-expands left and right for every bar → O(n^2).
 2. Observation:
-   - To compute max rectangle, we need the "first smaller element on left and right".
-   - Instead of recomputing every time, we can precompute using a stack.
-3. Monotonic Stack:
-   - Use a stack to maintain increasing heights.
-   - When a bar is smaller than stack top, we pop from stack:
-       * The popped bar defines a rectangle.
-       * Width = (currentIndex - previousSmallerIndex - 1).
-   - Push current index into stack.
-   - At end, process remaining stack bars.
-4. Why Stack is Best:
-   - Each bar is pushed and popped at most once → O(n).
-   - Stack efficiently finds left and right smaller boundaries.
-5. Tradeoffs:
-   - Brute force → O(n^2).
-   - Precomputing left/right arrays separately → O(n) but extra space.
-   - Stack → O(n), O(n) but elegant and minimal.
+   - We only need the **nearest smaller to left (NSL)** and **nearest smaller to right (NSR)**.
+   - This gives width directly without re-expanding.
+3. Data Structure Choice:
+   - Use a **monotonic increasing stack**:
+     * Push indices of bars while they increase.
+     * When we see a smaller height, pop and compute area.
+     * Width = (currentIndex - previousSmallerIndex - 1).
+4. Tradeoffs:
+   - Arrays for NSL/NSR also work → O(n), O(n).
+   - But stack gives elegant one-pass O(n).
+5. Why Best:
+   - Each bar pushed/popped once → O(n).
+   - Memory O(n).
+   - This is optimal for this problem.
 
 
 --------------------------------------
-OPTIMIZED SOLUTION (Monotonic Stack)
+OPTIMIZED SOLUTION (Monotonic Stack with ArrayDeque)
 --------------------------------------
 */
 
@@ -116,31 +109,20 @@ class Solution {
         int n = heights.length;
         int maxArea = 0;
 
-        // Stack will store indices of increasing heights
-        java.util.Stack<Integer> stack = new java.util.Stack<>();
+        // Use ArrayDeque instead of Stack for performance (Stack is synchronized and slower)
+        java.util.ArrayDeque<Integer> stack = new java.util.ArrayDeque<>();
 
         for (int i = 0; i <= n; i++) {
-            // When i == n, we treat current height as 0 to flush stack
-            int currHeight = (i == n) ? 0 : heights[i];
+            int currHeight = (i == n) ? 0 : heights[i]; // sentinel 0 at the end to flush stack
 
-            // While stack not empty and current height is smaller than top of stack
+            // When current bar is smaller than top of stack → compute area
             while (!stack.isEmpty() && currHeight < heights[stack.peek()]) {
-                int height = heights[stack.pop()]; // height of popped bar
-                int width;
-
-                if (stack.isEmpty()) {
-                    // means popped bar was smallest till now
-                    width = i;
-                } else {
-                    // width = distance between current i and new top
-                    width = i - stack.peek() - 1;
-                }
-
+                int height = heights[stack.pop()];
+                int width = stack.isEmpty() ? i : (i - stack.peek() - 1);
                 int area = height * width;
                 maxArea = Math.max(maxArea, area);
             }
 
-            // push current index
             stack.push(i);
         }
 
@@ -151,20 +133,33 @@ class Solution {
 /*
 Time Complexity:
 ---------------
-- Each bar is pushed once and popped once from the stack.
-- O(n) total operations.
-- So time = O(n).
+- Each bar is pushed and popped at most once → O(n).
+- Loop runs n times → O(n).
+- Total = O(n).
 
 Space Complexity:
 ----------------
-- Stack stores indices, at most n elements.
-- O(n) space.
+- Stack stores indices, at most n elements → O(n).
+*/
+
+
+/*
+--------------------------------------
+COMPARISON TABLE
+--------------------------------------
+
+| Approach             | Time   | Space | Notes                                      |
+|----------------------|--------|-------|--------------------------------------------|
+| Brute Force          | O(n^2) | O(1)  | Expands left & right for every bar         |
+| Precompute NSL/NSR   | O(n)   | O(n)  | Two stacks/arrays, more space              |
+| Monotonic Stack      | O(n)   | O(n)  | Elegant, optimal, best practical approach  |
 
 --------------------------------------
+
 Interview Tip:
 --------------
-- Always explain brute force first (expand left & right).
-- Show why it's O(n^2).
-- Transition: we only need left smaller and right smaller → use monotonic stack.
-- Final solution O(n), O(n).
+- Start with brute force → show O(n^2).
+- Explain the need for nearest smaller elements.
+- Introduce monotonic stack → O(n), O(n).
+- Mention implementation detail: prefer ArrayDeque over Stack in Java for speed.
 */
