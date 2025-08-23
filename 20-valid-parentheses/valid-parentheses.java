@@ -34,9 +34,9 @@ BRUTE FORCE SOLUTION
 
 Logic:
 ------
-- Keep replacing valid bracket pairs "()", "[]", "{}" from the string.
-- Continue until no more replacements are possible.
-- If the final string becomes empty → valid, else invalid.
+- Repeatedly replace "()", "[]", "{}" with "" in the string.
+- If string becomes empty → valid.
+- Else → invalid.
 
 Code:
 ------
@@ -62,103 +62,123 @@ public boolean isValidBruteForce(String s) {
 
 Step-by-step Time Complexity:
 -----------------------------
-1. Each replace operation scans string O(n).
-2. Up to n/2 replacements possible.
-3. Worst-case = O(n^2).
-
-Space Complexity:
------------------
-- String operations create new strings repeatedly.
-- Space = O(n) (since immutable strings in Java).
+1. Each replace → O(n).
+2. At most n/2 replacements.
+3. Worst case = O(n^2).
+4. Space = O(n) (due to new string creation).
 
 Final:
 ------
-- Time = O(n^2) ❌ (too slow for 10^4 length).
-- Space = O(n).
+- Time = O(n^2) ❌
+- Space = O(n)
 */
 
 
 /*
 --------------------------------------
-MOVING TO OPTIMIZATION
+OPTIMIZED SOLUTION (Deque<Character>)
 --------------------------------------
 
-Observation:
-------------
-- A valid sequence behaves like a stack:
-  - Every opening bracket must be matched with the latest unmatched opening.
-- Example: "([])" → push '(' → push '[' → match ']' → match ')'.
-
-Optimized Idea:
----------------
-- Use a stack.
-- For each char:
-  - If opening → push.
-  - If closing → check if stack top matches.
-- At the end:
-  - If stack empty → valid.
-  - Else → invalid.
+Idea:
+-----
+- Use stack (Deque) to hold opening brackets.
+- On closing bracket:
+  - Check top of stack.
+  - If mismatch → invalid.
+- End: if stack empty → valid.
 
 Why Stack?
 ----------
-- Matches LIFO (Last In, First Out).
-- Natural fit for parentheses matching.
-- O(n) time and O(n) space.
+- LIFO matches parentheses pairing.
+- O(n) time, O(n) space.
 
-Tradeoffs:
-----------
-- Brute force: easy but O(n^2).
-- Stack: O(n) → optimal.
-*/
-
-
-/*
---------------------------------------
-OPTIMIZED SOLUTION (Stack Approach)
---------------------------------------
+Code:
+------
 */
 
 import java.util.*;
 
-class Solution {
+class SolutionDeque {
     public boolean isValid(String s) {
-        // Stack to hold opening brackets
         Deque<Character> stack = new ArrayDeque<>();
 
         for (char c : s.toCharArray()) {
-            // Push opening brackets
             if (c == '(' || c == '[' || c == '{') {
-                stack.push(c);
+                stack.push(c); // push opening
             } else {
-                // Closing bracket must match top of stack
                 if (stack.isEmpty()) return false;
-
                 char top = stack.pop();
-                if (c == ')' && top != '(') return false;
-                if (c == ']' && top != '[') return false;
-                if (c == '}' && top != '{') return false;
+                if ((c == ')' && top != '(') ||
+                    (c == ']' && top != '[') ||
+                    (c == '}' && top != '{')) {
+                    return false;
+                }
             }
         }
 
-        // At the end, stack must be empty
         return stack.isEmpty();
     }
 }
 
 /*
-Time Complexity:
----------------
-- O(n): each char processed once (push/pop O(1)).
+Complexity:
+-----------
+- Time = O(n) → each char processed once, push/pop O(1).
+- Space = O(n) → stack holds at most n chars.
+*/
 
-Space Complexity:
-----------------
-- O(n): stack stores unmatched opening brackets.
+
+/*
+--------------------------------------
+FURTHER OPTIMIZED SOLUTION (char[] stack)
+--------------------------------------
+
+Idea:
+-----
+- Avoid Deque overhead and Character boxing.
+- Use raw char[] as stack.
+- Push/pop using array index → faster.
+
+Code:
+------
+*/
+
+class Solution {
+    public boolean isValid(String s) {
+        char[] stack = new char[s.length()];
+        int top = -1; // stack pointer
+
+        for (char c : s.toCharArray()) {
+            if (c == '(' || c == '[' || c == '{') {
+                stack[++top] = c; // push
+            } else {
+                if (top == -1) return false; // no opening
+                char open = stack[top--];    // pop
+                if ((c == ')' && open != '(') ||
+                    (c == ']' && open != '[') ||
+                    (c == '}' && open != '{')) {
+                    return false;
+                }
+            }
+        }
+
+        return top == -1; // stack must be empty
+    }
+}
+
+/*
+Complexity:
+-----------
+- Time = O(n): single pass.
+- Space = O(n): stack in worst case.
+- Runs faster than Deque<Character> (avoids boxing & method overhead).
 
 --------------------------------------
 Interview Tip:
 --------------
-1. Start brute force (replace pairs repeatedly → O(n^2)).
-2. Transition: "This is inefficient. Notice parentheses validation works like LIFO → use stack."
-3. Present stack solution O(n), O(n).
-4. Emphasize: This is the industry-standard approach.
+1. Start brute force (O(n^2)) → explain inefficiency.
+2. Transition: "We need LIFO → Stack is natural fit."
+3. Show Deque<Character> solution (clean for interviews).
+4. Then mention optimization: using char[] stack improves Java runtime
+   (fewer allocations, avoids boxing).
 */
