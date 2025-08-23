@@ -1,5 +1,5 @@
 /*
-Microsoft | String + HashMap | Simulation Pattern | Easy
+Microsoft | String + HashMap/Array | Simulation Pattern | Easy
 
 Problem:
 --------
@@ -11,7 +11,7 @@ Special subtraction rules:
 - X before L or C → 40, 90
 - C before D or M → 400, 900
 
-Given a roman numeral string s, convert it to an integer.
+Given a Roman numeral string s, convert it to an integer.
 
 Examples:
 ---------
@@ -22,7 +22,7 @@ Input: "MCMXCIV"  → Output: 1994 (M=1000, CM=900, XC=90, IV=4)
 Constraints:
 ------------
 - 1 <= s.length <= 15
-- s is a valid roman numeral between [1, 3999]
+- s is a valid Roman numeral between [1, 3999]
 
 
 --------------------------------------
@@ -31,12 +31,13 @@ BRUTE FORCE SOLUTION (Explanation + Code in Comments)
 
 How to Think Brute Force:
 -------------------------
-- Roman numerals follow subtraction rules in specific cases.
-- Brute force: 
-   1. Create a list of all possible roman numeral values (I, IV, V, IX, X, XL, ... M).
-   2. Match substrings of input string against this list (from left to right).
-   3. Add up values until string is fully parsed.
-- This works but involves substring comparisons repeatedly.
+- Roman numerals can have both single characters and special 2-character pairs.
+- Brute force idea:
+   1. Store all valid numerals (I, IV, V, IX, X, XL, ... M).
+   2. Traverse the string, check 2-character substrings first (like "IV", "CM").
+   3. If match found → add its value and skip 2 chars.
+   4. Else → add value of single char.
+- Works but substring creation in Java is expensive.
 
 Brute Force Code:
 -----------------
@@ -62,14 +63,12 @@ public int romanToInt(String s) {
 
 Time Complexity:
 ---------------
-- At each step we check 1 or 2 characters → O(n)
-- But substring creation is costly (O(n) each).
-- Overall worst-case → O(n^2).
+- O(n) iterations, but substring creation O(n) each → worst-case O(n^2)
 
 Space Complexity:
 ----------------
-- HashMap stores fixed mappings → O(1).
-- Extra substrings in memory → O(n).
+- HashMap fixed size → O(1)
+- Substrings → O(n) extra
 */
 
 
@@ -78,61 +77,55 @@ Space Complexity:
 THINKING TOWARDS OPTIMIZATION
 --------------------------------------
 
-1. Brute force creates substrings repeatedly → inefficient.
-2. Observation:
-   - When a smaller value appears before a larger one, subtract it.
-   - Otherwise, add normally.
-   - Example: "IX" = 10 - 1 = 9.
-3. We don’t need substrings; we just need to look at each character and the next one.
-4. Data structure:
-   - Use a **HashMap<Character, Integer>** to store values.
-   - Traverse string once, compare current value vs next value.
-   - This avoids extra substrings.
-5. Why HashMap?
-   - O(1) lookup for roman numeral values.
-   - Cleaner than switch-case, easy to maintain.
-6. Tradeoffs:
-   - HashMap vs switch-case: both O(1).  
-     HashMap is flexible (extendable if needed).  
-     Switch-case is slightly faster in raw performance.  
-   - For interviews → HashMap is clear and shows structured thinking.
+1. Substring creation is costly in brute force.
+2. Key observation:
+   - Roman numeral rule: if a smaller value is before a larger → subtract it.
+   - Otherwise → add it.
+3. This means we don’t need substrings.
+   Just compare current char with next char.
+4. Data structure choice:
+   - **HashMap<Character, Integer>**: O(1) lookup, clear to read.
+   - But HashMap has hashing overhead.
+   - For performance: **array[256] lookup** (ASCII) or **switch-case**.
+5. Tradeoffs:
+   - HashMap: More readable, slightly slower (~50% percentile).
+   - Array lookup: Faster, ~90% percentile.
+   - Switch-case: Fastest, minimal overhead, but less flexible.
+6. For interviews:
+   - Start with HashMap (clarity).
+   - Mention that array/switch is more performant.
+*/
 
 
+/*
 --------------------------------------
-OPTIMIZED SOLUTION (One-pass using HashMap)
+OPTIMIZED SOLUTION (Array Lookup for Performance)
 --------------------------------------
 */
 
-import java.util.*;
-
 class Solution {
     public int romanToInt(String s) {
-        // Step 1: Create map of roman values
-        Map<Character, Integer> map = new HashMap<>();
-        map.put('I', 1);
-        map.put('V', 5);
-        map.put('X', 10);
-        map.put('L', 50);
-        map.put('C', 100);
-        map.put('D', 500);
-        map.put('M', 1000);
+        // Pre-fill values in ASCII array
+        int[] values = new int[256];
+        values['I'] = 1;
+        values['V'] = 5;
+        values['X'] = 10;
+        values['L'] = 50;
+        values['C'] = 100;
+        values['D'] = 500;
+        values['M'] = 1000;
 
         int result = 0;
-
-        // Step 2: Traverse string
         for (int i = 0; i < s.length(); i++) {
-            int value = map.get(s.charAt(i));
+            int value = values[s.charAt(i)];
 
-            // If next value is larger → subtract current
-            if (i + 1 < s.length() && value < map.get(s.charAt(i + 1))) {
+            // If next char is larger, subtract current
+            if (i + 1 < s.length() && value < values[s.charAt(i + 1)]) {
                 result -= value;
-            } 
-            // Else → add current
-            else {
+            } else {
                 result += value;
             }
         }
-
         return result;
     }
 }
@@ -140,13 +133,12 @@ class Solution {
 /*
 Time Complexity:
 ---------------
-- Single traversal → O(n), where n = length of string.
-- Each map lookup is O(1).
+- Single pass through string → O(n)
+- Constant-time array lookup → O(1)
 - Overall: O(n)
 
 Space Complexity:
 ----------------
-- HashMap of fixed 7 symbols → O(1).
-- No extra data structures.
-- Overall: O(1)
+- Fixed int[256] array → O(1)
+- No extra structures.
 */
