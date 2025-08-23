@@ -1,5 +1,5 @@
 /*
-Microsoft | Array | Sliding Window / Greedy | Easy
+Microsoft | Array | Greedy / Sliding Window | Easy
 
 Problem:
 --------
@@ -8,7 +8,7 @@ Given a binary array nums, return the maximum number of consecutive 1's in the a
 Examples:
 ---------
 Input: [1,1,0,1,1,1] → Output: 3
-    The last three 1s form the longest streak.
+    Longest streak of 1s = last three elements.
 
 Input: [1,0,1,1,0,1] → Output: 2
 
@@ -26,12 +26,12 @@ BRUTE FORCE SOLUTION (Step by Step)
 
 How to Think Brute Force:
 -------------------------
-- A "streak of consecutive 1's" means we must check all subarrays and count how many 1s appear consecutively.
-- Brute force method:
+- A "streak of consecutive 1s" means we must check subarrays.
+- Brute approach:
    1. Start from each index i.
-   2. Expand forward until encountering a 0 or reaching end.
+   2. Expand forward until we hit a 0 or reach end.
    3. Track maximum streak length.
-- This repeats work, but it's the naive first approach.
+- This re-checks many elements → quadratic.
 
 Brute Force Code:
 -----------------
@@ -44,21 +44,25 @@ public int findMaxConsecutiveOnes(int[] nums) {
                 count++;
                 maxCount = Math.max(maxCount, count);
             } else {
-                break; // stop when a 0 is found
+                break; // stop when 0 encountered
             }
         }
     }
     return maxCount;
 }
 
-Step-by-step Complexity Analysis:
----------------------------------
-1. Outer loop runs n times.
-2. Inner loop in worst case runs n times (when array is all 1s).
-3. Total operations ≈ n * n = O(n^2).
-   - Example: nums=[1,1,1,1], i=0 checks 4 steps, i=1 checks 3, i=2 checks 2, i=3 checks 1 → sum ≈ n(n+1)/2.
-   - So O(n^2).
-4. Space: O(1) because only counters are used.
+Step-by-Step Complexity Reasoning:
+----------------------------------
+1. Outer loop runs n times (index i).
+2. Inner loop in worst case runs n times (array full of 1s).
+3. Total ≈ n + (n-1) + (n-2) + ... + 1 = n(n+1)/2.
+4. Asymptotic complexity → O(n^2).
+
+Space Complexity:
+-----------------
+- Only counters are used.
+- No extra data structures.
+- Space = O(1).
 
 Final Complexity:
 -----------------
@@ -69,31 +73,29 @@ Final Complexity:
 
 /*
 --------------------------------------
-THINKING TOWARDS OPTIMIZATION
+MOVING TOWARDS OPTIMIZATION
 --------------------------------------
 
-1. Brute force re-checks many segments unnecessarily.
-   - Example: When array is [1,1,1,1], inner loop re-counts streaks.
-2. Observation:
-   - We only need to keep track of "current consecutive 1s".
-   - Reset count whenever a 0 appears.
-   - Update maxCount whenever count grows.
-3. This becomes a simple one-pass linear scan.
-4. Why best:
-   - Only one traversal → O(n).
-   - Constant extra variables → O(1).
+1. Brute force wastes time by re-checking elements.
+   - Example: [1,1,1,1], inner loop counts overlapping streaks.
+2. We only need to maintain a **current streak of 1s**.
+   - Reset streak when we encounter 0.
+   - Track maximum streak.
+3. This reduces to a **single pass** → O(n).
+4. Why Greedy is Best:
+   - We don’t need sliding window or DP (overkill).
+   - Just counters are enough.
 5. Tradeoffs:
-   - Sliding window approach is equivalent here but overkill.
-   - Dynamic programming also unnecessary since we only need local streak count.
-   - Greedy one-pass is simplest and most optimal.
+   - Brute force O(n^2) → impossible for n=10^5.
+   - Greedy scan O(n), O(1) → optimal.
 
 
 --------------------------------------
-OPTIMIZED SOLUTION (One-Pass Greedy)
+OPTIMIZED SOLUTION (Greedy Clean Version)
 --------------------------------------
 */
-
-class Solution {
+/*
+class Solution1 {
     public int findMaxConsecutiveOnes(int[] nums) {
         int maxCount = 0;
         int currentCount = 0;
@@ -103,7 +105,46 @@ class Solution {
                 currentCount++;
                 maxCount = Math.max(maxCount, currentCount);
             } else {
-                currentCount = 0; // reset streak
+                currentCount = 0;
+            }
+        }
+        return maxCount;
+    }
+}
+*/
+/*
+Time Complexity:
+---------------
+- Single pass → O(n).
+
+Space Complexity:
+----------------
+- Only two counters → O(1).
+*/
+
+
+/*
+--------------------------------------
+MICRO-OPTIMIZED VERSION (Avoid Math.max + Index Loop)
+--------------------------------------
+- Avoids Math.max call inside loop (branchless improvement).
+- Uses index-based loop instead of enhanced-for (avoids iterator).
+- On large inputs, runs slightly faster.
+*/
+
+class Solution {
+    public int findMaxConsecutiveOnes(int[] nums) {
+        int maxCount = 0, currentCount = 0;
+        int n = nums.length;
+
+        for (int i = 0; i < n; i++) {
+            if (nums[i] == 1) {
+                currentCount++;
+                if (currentCount > maxCount) {
+                    maxCount = currentCount;
+                }
+            } else {
+                currentCount = 0;
             }
         }
 
@@ -112,13 +153,28 @@ class Solution {
 }
 
 /*
-Time Complexity:
----------------
-- Single pass through nums → O(n).
-- Each operation inside loop is O(1).
-- Total = O(n).
+Time Complexity: O(n)
+Space Complexity: O(1)
+*/
 
-Space Complexity:
-----------------
-- Only two variables → O(1).
+
+/*
+--------------------------------------
+COMPARISON TABLE
+--------------------------------------
+
+| Approach             | Time   | Space | Notes                          |
+|----------------------|--------|-------|--------------------------------|
+| Brute Force          | O(n^2) | O(1)  | Re-checks subarrays repeatedly |
+| Greedy Clean Version | O(n)   | O(1)  | Simple, readable, optimal      |
+| Micro-Optimized      | O(n)   | O(1)  | Faster in practice, avoids lib |
+
+--------------------------------------
+
+Interview Tip:
+--------------
+- Always start with brute force → explain why it's O(n^2).
+- Show insight: just track current streak → O(n).
+- Implement Greedy clean version.
+- Optionally mention micro-optimizations (avoid Math.max overhead).
 */
