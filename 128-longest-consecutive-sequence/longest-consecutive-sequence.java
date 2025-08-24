@@ -1,122 +1,114 @@
 /*
-Microsoft | Array + HashSet | Consecutive Sequence Pattern | Medium
+Microsoft | Arrays + HashSet (Sequence Building Pattern) | Medium
 
 Problem:
 --------
 Given an unsorted array of integers nums, return the length of the longest 
 consecutive elements sequence.
 
-You must solve this in O(n) time.
+We must write an algorithm that runs in O(n) time.
 
-Examples:
----------
-Input: [100,4,200,1,3,2]  → Output: 4  (sequence = [1,2,3,4])
-Input: [0,3,7,2,5,8,4,6,0,1] → Output: 9 (sequence = [0,1,2,3,4,5,6,7,8])
-Input: [1,0,1,2] → Output: 3 (sequence = [0,1,2])
-
-Constraints:
-------------
-- 0 <= nums.length <= 10^5
-- -10^9 <= nums[i] <= 10^9
-*/
-
-
-/*
---------------------------------------
+--------------------------------------------------------
 BRUTE FORCE SOLUTION
---------------------------------------
+--------------------------------------------------------
 
 Logic:
 ------
-1. For each number nums[i]:
-   - Check whether nums[i] + 1, nums[i] + 2, ... exist in the array.
-   - Count streak length.
-2. Track maximum streak length.
+1. Sort the array (since we want consecutive numbers).
+2. Scan the sorted array while counting the length of the current consecutive sequence.
+3. Track the maximum length seen so far.
 
-Code:
-------
+Code (Brute Force):
+-------------------
 public int longestConsecutiveBruteForce(int[] nums) {
-    int n = nums.length;
-    int longest = 0;
+    if (nums.length == 0) return 0;
 
-    for (int i = 0; i < n; i++) {
-        int currentNum = nums[i];
-        int currentStreak = 1;
+    Arrays.sort(nums);  // O(n log n)
 
-        int next = currentNum + 1;
-        while (contains(nums, next)) {
-            currentStreak++;
-            next++;
+    int maxLen = 1;
+    int currLen = 1;
+
+    for (int i = 1; i < nums.length; i++) {
+        if (nums[i] == nums[i-1]) continue;       // skip duplicates
+        else if (nums[i] == nums[i-1] + 1) {
+            currLen++;                            // consecutive continues
+        } else {
+            maxLen = Math.max(maxLen, currLen);   // reset sequence
+            currLen = 1;
         }
-        longest = Math.max(longest, currentStreak);
     }
-    return longest;
-}
-
-private boolean contains(int[] nums, int target) {
-    for (int num : nums) {
-        if (num == target) return true;
-    }
-    return false;
+    maxLen = Math.max(maxLen, currLen);
+    return maxLen;
 }
 
 Step-by-step Complexity:
 ------------------------
-1. Outer loop → O(n).
-2. contains() inside while → O(n).
-3. Worst case for each element → O(n).
-4. Total → O(n^3) ❌ (too slow for n=10^5).
+- Sorting: O(n log n)
+- One scan: O(n)
+- Total Time Complexity: O(n log n)
+- Space Complexity: O(1) (ignoring sorting cost)
 
-Space:
-------
-- Only variables → O(1).
-*/
+Why not optimal?
+----------------
+Because requirement is strictly O(n). Sorting gives O(n log n).
+We need something faster: Hashing.
 
-
-/*
---------------------------------------
-OPTIMIZED SOLUTION (HashSet) — O(n)
---------------------------------------
+--------------------------------------------------------
+OPTIMIZED SOLUTION (HashSet + Sequence Building)
+--------------------------------------------------------
 
 Logic:
 ------
-- Store all nums in HashSet for O(1) lookup.
-- For each num:
-  - Only start counting if (num - 1) is not in set → ensures we only start at sequence beginnings.
-  - Count consecutive streak (num+1, num+2, …).
-- Track max streak length.
+1. Insert all numbers into a HashSet for O(1) lookups.
+2. For each number, check if it is a **sequence start**:
+   - A sequence start is a number `x` such that `x-1` is not in the set.
+   - That means `x` is the first element of some sequence.
+3. If it is a start, keep checking x+1, x+2, ... until the sequence breaks.
+4. Track maximum sequence length.
 
-Why HashSet?
-------------
-- O(1) membership check on average.
-- Each number visited once in expansion → O(n).
+Why this works:
+---------------
+- Each number is processed only once in its sequence expansion.
+- Ensures O(n) total, because every element belongs to exactly one sequence traversal.
 
-Code:
-------
+Tradeoffs vs Other Data Structures:
+-----------------------------------
+- Could try sorting → O(n log n).
+- Could try Union-Find (DSU) → harder, O(n α(n)).
+- HashSet is best here: O(n) avg with clear intuition.
+
+--------------------------------------------------------
+OPTIMIZED JAVA CODE
+--------------------------------------------------------
 */
 
 import java.util.*;
 
-class SolutionHashSet {
+class Solution {
     public int longestConsecutive(int[] nums) {
-        if (nums == null || nums.length == 0) return 0;
+        if (nums.length == 0) return 0;
 
+        // Step 1: Insert all numbers into a HashSet for O(1) lookups
         Set<Integer> set = new HashSet<>();
         for (int num : nums) set.add(num);
 
         int longest = 0;
 
+        // Step 2: Iterate through each number
         for (int num : set) {
-            if (!set.contains(num - 1)) { // start of a sequence
-                int current = num;
-                int streak = 1;
+            // Only start counting if num is the beginning of a sequence
+            if (!set.contains(num - 1)) {
+                int currNum = num;
+                int currLen = 1;
 
-                while (set.contains(current + 1)) {
-                    current++;
-                    streak++;
+                // Step 3: Expand the sequence forward
+                while (set.contains(currNum + 1)) {
+                    currNum++;
+                    currLen++;
                 }
 
-                longest = Math.max(longest, streak);
+                // Step 4: Update global maximum
+                longest = Math.max(longest, currLen);
             }
         }
 
@@ -125,72 +117,32 @@ class SolutionHashSet {
 }
 
 /*
-Complexity:
------------
-- Time = O(n) (build set + traverse set, each element checked once).
-- Space = O(n) (set stores all elements).
+--------------------------------------------------------
+TIME & SPACE COMPLEXITY
+--------------------------------------------------------
 
-⚠ Note: Although O(n), HashSet in Java can be slower due to boxing/unboxing
-and iterator overhead, leading to lower runtime percentile.
-*/
-
-
-/*
---------------------------------------
-PRACTICAL SOLUTION (Sorting + Scan) — O(n log n)
---------------------------------------
-
-Logic:
-------
-- Sort nums.
-- Traverse once, count consecutive streaks.
-- Skip duplicates.
-- Track longest streak.
-
-Why Sorting?
+Brute Force:
 ------------
-- Sorting is O(n log n), but Arrays.sort() in Java is highly optimized in C-level code.
-- Avoids HashSet overhead (no boxing/unboxing).
-- Often runs faster in practice on LeetCode.
+- Time: O(n log n) because of sorting.
+- Space: O(1).
 
-Code:
-------
-*/
+Optimized:
+----------
+- Time: O(n)
+   * Insert into HashSet: O(n).
+   * Each number expanded only once: O(n).
+   * Total: O(n).
+- Space: O(n) for HashSet.
 
-class Solution {
-    public int longestConsecutive(int[] nums) {
-        if (nums == null || nums.length == 0) return 0;
+--------------------------------------------------------
+Interview Thought Process:
+--------------------------
+1. Start with brute force: sorting + scanning O(n log n).
+2. Recognize O(n) requirement → sorting not allowed.
+3. Think about checking consecutiveness quickly → HashSet O(1).
+4. Key trick: Only start from numbers where `num-1` doesn’t exist,
+   to avoid recomputation.
+5. This guarantees linear time.
 
-        Arrays.sort(nums); // O(n log n)
-        int longest = 1;
-        int streak = 1;
-
-        for (int i = 1; i < nums.length; i++) {
-            if (nums[i] == nums[i - 1]) {
-                continue; // skip duplicates
-            } else if (nums[i] == nums[i - 1] + 1) {
-                streak++;
-            } else {
-                longest = Math.max(longest, streak);
-                streak = 1;
-            }
-        }
-
-        return Math.max(longest, streak);
-    }
-}
-
-/*
-Complexity:
------------
-- Time = O(n log n) (sorting dominates).
-- Space = O(1) (ignoring sort’s internal recursion stack).
-
---------------------------------------
-Interview Roadmap:
-------------------
-1. Brute Force: O(n^3) → clearly too slow.
-2. Optimal: HashSet O(n) → theoretically best.
-3. Tradeoff: Sorting O(n log n) → faster in Java runtime due to optimized sort vs HashSet overhead.
-4. Mention both approaches: shows depth of thought in interviews.
+--------------------------------------------------------
 */
